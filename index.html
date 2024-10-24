@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filtrar Números do WhatsApp</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #fileInput {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            margin-right: 10px;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #status {
+            margin-top: 20px;
+            background-color: #e2e3e5;
+            border: 1px solid #d3d3d3;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Filtrar Números do WhatsApp</h1>
+    <input type="file" id="fileInput" />
+    <button onclick="filterNumbers()">Filtrar Números</button>
+    <button onclick="downloadNumbers(true)">Baixar com Nomes</button>
+    <button onclick="downloadNumbers(false)">Baixar Sem Nomes</button>
+
+    <div id="status"></div>
+
+    <script>
+        let filteredNumbers = [];
+
+        function filterNumbers() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = ""; // Limpar o status
+
+            if (!file) {
+                alert("Por favor, selecione um arquivo.");
+                return;
+            }
+
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (fileExtension === "csv" || fileExtension === "txt") {
+                handleCSVorTXT(file, fileExtension);
+            } else if (fileExtension === "xls" || fileExtension === "xlsx") {
+                handleExcel(file);
+            } else {
+                alert("Formato de arquivo não suportado. Use CSV, TXT, XLS ou XLSX.");
+            }
+        }
+
+        function handleCSVorTXT(file, extension) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML += `<p>Lendo ${file.name}...</p>`;
+                
+                filteredNumbers = lines
+                    .filter(line => line.includes("Yes"))
+                    .map(line => line.split(',')[0]);
+
+                statusDiv.innerHTML += `<p>Encontrados ${filteredNumbers.length} números.</p>`;
+            };
+            reader.readAsText(file);
+        }
+
+        function handleExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerHTML += `<p>Lendo ${file.name}...</p>`;
+
+                filteredNumbers = json
+                    .filter(row => row[1] === "Yes")
+                    .map(row => row[0]);
+
+                statusDiv.innerHTML += `<p>Encontrados ${filteredNumbers.length} números.</p>`;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function downloadNumbers(withNames) {
+            if (filteredNumbers.length === 0) {
+                alert("Nenhum número filtrado encontrado. Por favor, filtre os números primeiro.");
+                return;
+            }
+
+            const csv = Papa.unparse(
+                filteredNumbers.map(num => ({
+                    "WhatsApp Number": withNames ? num : ""
+                }))
+            );
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", 'numeros_filtrados.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
