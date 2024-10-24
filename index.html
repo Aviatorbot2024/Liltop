@@ -112,17 +112,23 @@
             reader.readAsArrayBuffer(file);
         }
 
+        function gerarNomeAleatorio() {
+            const nomes = ["João", "Maria", "Pedro", "Ana", "Carlos", "Fernanda", "Lucas", "Mariana", "José", "Paula"];
+            return nomes[Math.floor(Math.random() * nomes.length)];
+        }
+
         function downloadNumbers(withNames) {
             if (filteredNumbers.length === 0) {
                 alert("Nenhum número filtrado encontrado. Por favor, filtre os números primeiro.");
                 return;
             }
 
-            const csv = Papa.unparse(
-                filteredNumbers.map(num => ({
-                    "WhatsApp Number": withNames ? num : ""
-                }))
-            );
+            const csvData = filteredNumbers.map(num => ({
+                "WhatsApp Number": num,
+                "Nome": withNames ? gerarNomeAleatorio() : ""
+            }));
+
+            const csv = Papa.unparse(csvData);
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
