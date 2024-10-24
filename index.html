@@ -124,8 +124,8 @@
             }
 
             const csvData = filteredNumbers.map(num => ({
-                "WhatsApp Number": num,
-                "Nome": withNames ? gerarNomeAleatorio() : ""
+                "Nome": withNames ? gerarNomeAleatorio() : "",
+                "WhatsApp Number": num
             }));
 
             const csv = Papa.unparse(csvData);
